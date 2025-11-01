@@ -1,0 +1,2 @@
+# contract-bot
+Contract hack .
