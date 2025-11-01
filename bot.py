@@ -1,4 +1,4 @@
- import os
+import os
 import logging
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
@@ -8,11 +8,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# --- ⚠️ এইখানে আপনার নিজের Chat ID বসান ---
-# @userinfobot থেকে পাওয়া আপনার ID টি " " এর ভেতরে বসান
+# --- আপনার Chat ID এখানে বসানো হয়েছে ---
 ADMIN_CHAT_ID = "8317578721" 
-# যেমন: ADMIN_CHAT_ID = "123456789"
-# ------------------------------------------
+# ------------------------------------
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 
@@ -23,7 +21,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     keyboard = [[contact_button]]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
     
-    welcome_note = "♨️স্বাগতম! আমাদের প্রিমিয়াম গ্ৰুপের এক্সেস পেতে সকল পারমিশন দিন🈵 এবং সাথে সাথে আমাদের সকল গ্ৰুপের এক্সেস পান 🔞।"
+    welcome_note = "স্বাগতম! সাপোর্ট পাওয়ার জন্য আপনার কন্টাক্ট শেয়ার করতে নিচের বাটনে ক্লিক করুন।"
     await update.message.reply_text(welcome_note, reply_markup=reply_markup)
 
 # যখন ইউজার কন্টাক্ট শেয়ার করবে
@@ -56,7 +54,13 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     ইউজারনেম: @{username}
     """
     if ADMIN_CHAT_ID:
-        await context.bot.send_message(chat_id=ADMIN_CHAT_ID, text=admin_message)
+        try:
+            await context.bot.send_message(
+                chat_id=ADMIN_CHAT_ID,
+                text=admin_message
+            )
+        except Exception as e:
+            logger.error(f"Failed to send message to admin: {e}")
 
 # ⚠️ নতুন ফাংশন: সাধারণ টেক্সট মেসেজ হ্যান্ডেল করার জন্য
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -80,10 +84,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         {user_message}
         """
         if ADMIN_CHAT_ID:
-            await context.bot.send_message(chat_id=ADMIN_CHAT_ID, text=admin_forward_message)
-        
-        # (ঐচ্ছিক) ইউজারকে কনফার্মেশন পাঠানো
-        await update.message.reply_text("আপনার মেসেজটি অ্যাডমিনের কাছে পাঠানো হয়েছে।")
+            try:
+                await context.bot.send_message(
+                    chat_id=ADMIN_CHAT_ID, 
+                    text=admin_forward_message
+                )
+                # (ঐচ্ছিক) ইউজারকে কনফার্মেশন পাঠানো
+                await update.message.reply_text("আপনার মেসেজটি অ্যাডমিনের কাছে পাঠানো হয়েছে।")
+            except Exception as e:
+                logger.error(f"Failed to forward message to admin: {e}")
+                await update.message.reply_text("মেসেজ পাঠাতে একটি সমস্যা হয়েছে।")
         
     else:
         # যদি নম্বর সেভ না থাকে
@@ -93,9 +103,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 def main() -> None:
     if not BOT_TOKEN:
         logger.error("Error: BOT_TOKEN is not set!")
-        return
-    if not ADMIN_CHAT_ID or ADMIN_CHAT_ID == "YOUR_CHAT_ID_HERE":
-        logger.error("Error: ADMIN_CHAT_ID is not set!")
         return
 
     application = Application.builder().token(BOT_TOKEN).build()
